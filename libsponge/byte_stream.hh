@@ -8,6 +8,8 @@
 #include <string>
 #include <utility>
 
+#include "util/buffer.hh"
+
 //! \brief An in-order byte stream.
 
 //! Bytes are written on the "input" side and read from the "output"
@@ -16,6 +18,12 @@
 class ByteStream {
   private:
     // Your code here -- add private members as necessary.
+
+    BufferList _buffer_list = {};
+    size_t _capacity = 0;
+    size_t _bytes_written = 0;
+    size_t _bytes_readed = 0;
+    bool _input_ended = false;
 
     bool _error{};  //!< Flag indicating that the stream suffered an error.
 

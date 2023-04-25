@@ -16,34 +16,41 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-ByteStream::ByteStream(const size_t capacity) { DUMMY_CODE(capacity); }
+ByteStream::ByteStream(const size_t capacity) : _capacity(capacity) {}
 
 size_t ByteStream::write(const string &data) {
-    DUMMY_CODE(data);
-    return {};
+    int write_len = min(data.length(), _capacity - _buffer_list.size());
+    _bytes_written += write_len;
+    _buffer_list.append(BufferList(std::move(string().assign(data.begin(), data.begin() + write_len))));
+    return write_len;
 }
 
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
-    DUMMY_CODE(len);
-    return {};
+    int peek_len = min(len, _buffer_list.size());
+    string full_data = _buffer_list.concatenate();
+    return string().assign(full_data.begin(), full_data.begin() + peek_len);
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer
-void ByteStream::pop_output(const size_t len) { DUMMY_CODE(len); }
+void ByteStream::pop_output(const size_t len) { 
+    int pop_len = min(len, _buffer_list.size());
+    _bytes_readed += pop_len;
+    _buffer_list.remove_prefix(pop_len);
+ }
 
-void ByteStream::end_input() {}
+void ByteStream::end_input() { _input_ended = true; }
 
-bool ByteStream::input_ended() const { return {}; }
+bool ByteStream::input_ended() const { return _input_ended; }
 
-size_t ByteStream::buffer_size() const { return {}; }
+size_t ByteStream::buffer_size() const { return _buffer_list.size(); }
 
-bool ByteStream::buffer_empty() const { return {}; }
+bool ByteStream::buffer_empty() const { return _buffer_list.size() == 0; }
 
-bool ByteStream::eof() const { return false; }
+bool ByteStream::eof() const { return _buffer_list.size() == 0 && _input_ended; }
 
-size_t ByteStream::bytes_written() const { return {}; }
+size_t ByteStream::bytes_written() const { return _bytes_written; }
 
-size_t ByteStream::bytes_read() const { return {}; }
+size_t ByteStream::bytes_read() const { return _bytes_readed; }
 
-size_t ByteStream::remaining_capacity() const { return {}; }
+size_t ByteStream::remaining_capacity() const { return _capacity - _buffer_list.size(); }
