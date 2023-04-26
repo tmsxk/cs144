@@ -20,6 +20,9 @@ StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity),
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
     // check boundary and truncate the ‘data’ to adapt the accept window size.
     size_t l_bound = _next_assembled_idx, r_bound = _next_assembled_idx + _capacity - _output.buffer_size() - 1;
+    if (l_bound > r_bound) {
+        return;
+    }
     size_t new_index = index;
     string new_data = data;
     if (index < l_bound) {
