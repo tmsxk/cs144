@@ -32,6 +32,8 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
+    uint64_t _checked_ackno = 0;
+
     unsigned int _retransmission_timeout;
 
     unsigned int _consecutive_retransmissions = 0;
@@ -42,7 +44,7 @@ class TCPSender {
 
     uint64_t _bytes_in_flight = 0;
 
-    uint16_t _recv_window_size = 1;
+    uint16_t _recv_window_size = 0;
 
     std::queue<TCPSegment> _outstanding_segments{};
 

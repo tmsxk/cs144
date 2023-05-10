@@ -52,3 +52,8 @@ add_test_exec (send_retx)
 add_test_exec (send_ack)
 add_test_exec (send_window)
 add_test_exec (send_close)
+
+# 开启调试信息
+set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")

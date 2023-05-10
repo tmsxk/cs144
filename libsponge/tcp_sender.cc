@@ -36,19 +36,20 @@ void TCPSender::fill_window() {
         _next_seqno++;
         _bytes_in_flight++;
         _syn = true;
+        if (!_timer_active) {
+            _timer_cnt = 0;
+            _timer_active = true;
+        }
+        return;
     }
 
-    size_t remain = _recv_window_size - _bytes_in_flight;
-    while (remain > 0 && !_fin) {
+    uint16_t window_size = _recv_window_size ? _recv_window_size: 1;
+    size_t remain;
+    while ((remain = window_size - (_next_seqno - _checked_ackno)) > 0 && !_fin) {
         size_t send_size = min(remain, TCPConfig::MAX_PAYLOAD_SIZE);
-        if (send_size > _stream.buffer_size()) {
-            send_size = _stream.buffer_size();
-        }
-        remain -= send_size;
-        string payload = _stream.read(send_size);
         TCPSegment seg;
         seg.header().seqno = next_seqno();
-        seg.payload() = Buffer(std::move(payload));
+        seg.payload() = Buffer(std::move(_stream.read(send_size)));
         if (remain > 0 && _stream.eof()) {
             seg.header().fin = true;
             _fin = true;
@@ -65,7 +66,6 @@ void TCPSender::fill_window() {
     if (!_timer_active) {
         _timer_cnt = 0;
         _timer_active = true;
-        _retransmission_timeout = _initial_retransmission_timeout;
     }
 }
 
@@ -73,12 +73,17 @@ void TCPSender::fill_window() {
 //! \param window_size The remote receiver's advertised window size
 //! \returns `false` if the ackno appears invalid (acknowledges something the TCPSender hasn't sent yet)
 bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
-    uint64_t abs_ackno = unwrap(ackno, _isn, _next_seqno);
+    uint64_t abs_ackno = unwrap(ackno, _isn, _checked_ackno);
     if (abs_ackno > _next_seqno) {
         return false;
     }
 
     _recv_window_size = window_size;
+
+    if (abs_ackno <= _checked_ackno) {
+        return true;
+    }
+    _checked_ackno = abs_ackno;
 
     while (!_outstanding_segments.empty()) {
         TCPSegment seg = _outstanding_segments.front();
@@ -91,12 +96,15 @@ bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         }
     }
 
+    fill_window();
+
     _retransmission_timeout = _initial_retransmission_timeout;
+    _consecutive_retransmissions = 0;
+
     if (!_outstanding_segments.empty()) {
         _timer_cnt = 0;
         _timer_active = true;
     }
-    _consecutive_retransmissions = 0;
 
     return true;
 }
@@ -114,10 +122,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
                 return;
             }
 
-            if (_recv_window_size > 0) {
-                _consecutive_retransmissions++;
-                _retransmission_timeout *= 2;
-            }
+            _consecutive_retransmissions++;
+            _retransmission_timeout *= 2;
 
             _timer_cnt = 0;
             _timer_active = true;

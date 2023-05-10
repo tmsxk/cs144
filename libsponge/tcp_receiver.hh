@@ -19,6 +19,7 @@ class TCPReceiver {
 
     WrappingInt32 _isn{0};
     uint64_t _ackno{0};
+    uint64_t _prev_checked_seqno = 0;
     bool _syn_flag = false;
 
     //! The maximum number of bytes we'll store.
