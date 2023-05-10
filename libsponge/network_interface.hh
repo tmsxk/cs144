@@ -6,6 +6,7 @@
 #include "tun.hh"
 
 #include <optional>
+#include <map>
 #include <queue>
 
 //! \brief A "network interface" that connects IP (the internet layer, or network layer)
@@ -39,6 +40,24 @@ class NetworkInterface {
 
     //! outbound queue of Ethernet frames that the NetworkInterface wants sent
     std::queue<EthernetFrame> _frames_out{};
+
+    struct ARPItem{
+      EthernetAddress mac_address;
+      size_t ttl;
+    };
+    struct WaitingFrame{
+      EthernetFrame frame;
+      uint32_t ip;
+    };
+    std::map<uint32_t, ARPItem> _arp_table = {};
+    std::queue<WaitingFrame> _waiting_frames = {};
+    std::queue<uint32_t> _pending_arp = {};
+    bool _pending_flag = false;
+    size_t _pending_timer_cnt = 0;
+    size_t _timer_cnt = 0;
+
+    bool ethernet_address_equal(EthernetAddress addr1, EthernetAddress addr2);
+    void retransmit_arp_frame();
 
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses

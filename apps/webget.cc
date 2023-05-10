@@ -1,4 +1,5 @@
 #include "socket.hh"
+#include "tcp_sponge_socket.hh"
 #include "util.hh"
 
 #include <cstdlib>
@@ -18,7 +19,7 @@ void get_URL(const string &host, const string &path) {
     // the "eof" (end of file).
 
     Address addr(host, "http");
-    TCPSocket socket;
+    FullStackSocket socket;
     socket.connect(addr);
     socket.write("GET " + path + " HTTP/1.1\r\n");
     socket.write("HOST: " + host + "\r\n");
